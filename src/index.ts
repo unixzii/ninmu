@@ -1,3 +1,2 @@
 export type * from "./types.js";
-
-export function setup() {}
+export { createEngine } from "./engine.js";

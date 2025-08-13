@@ -1,14 +1,86 @@
 import type { Engine } from "./types.js";
+import type { InternalTask } from "./task.js";
+import { createTask } from "./task.js";
 
-export interface InternalEngine extends Engine {}
+export interface InternalEngine extends Engine {
+  allTasks: InternalTask[];
+  pendingTasks: Set<InternalTask>;
+
+  isStarted: boolean;
+  isFinished: boolean;
+
+  finishCb: (() => void) | undefined;
+
+  /**
+   * Checks if we can start some tasks. And notify the observers
+   * when all tasks are finished.
+   */
+  checkTasks(): void;
+}
+
+function _createEngine(): InternalEngine {
+  return {
+    allTasks: [],
+    pendingTasks: new Set(),
+    isStarted: false,
+    isFinished: false,
+    finishCb: undefined,
+    createTask(options) {
+      const task = createTask(options, this);
+      this.allTasks.push(task);
+      this.pendingTasks.add(task);
+
+      setImmediate(() => {
+        this.checkTasks();
+      });
+
+      return task;
+    },
+    start(cb) {
+      if (this.isStarted) {
+        throw new Error("Engine already started");
+      }
+      this.isStarted = true;
+      this.finishCb = cb;
+
+      this.checkTasks();
+    },
+    checkTasks() {
+      if (this.isFinished) {
+        return;
+      }
+
+      if (this.pendingTasks.size === 0) {
+        const allFinished = this.allTasks.every((task) => task.isFinished);
+        if (allFinished) {
+          this.isFinished = true;
+          this.finishCb?.();
+        }
+        return;
+      }
+
+      let hasTaskStarted = false;
+      const pendingTasks = new Set(this.pendingTasks);
+      pendingTasks.forEach((task) => {
+        if (!task.canStart()) {
+          return;
+        }
+        hasTaskStarted = true;
+        this.pendingTasks.delete(task);
+        task._start(() => {
+          this.checkTasks();
+        });
+      });
+
+      if (!hasTaskStarted) {
+        throw new Error(
+          "No more tasks can start, maybe there is a dependency cycle",
+        );
+      }
+    },
+  };
+}
 
 export function createEngine(): Engine {
-  return {
-    createTask(options) {
-      throw new Error("Not implemented");
-    },
-    start() {
-      throw new Error("Not implemented");
-    },
-  } satisfies InternalEngine;
+  return _createEngine();
 }

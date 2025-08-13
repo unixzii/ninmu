@@ -1,7 +1,7 @@
 import type { Task, TaskOptions } from "./types.js";
 import type { InternalEngine } from "./engine.js";
 
-interface InternalTask extends Task {
+export interface InternalTask extends Task {
   parentTask: InternalTask | undefined;
   childTasks: InternalTask[];
 

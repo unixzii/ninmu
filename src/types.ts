@@ -39,6 +39,7 @@ export interface Engine {
 
   /**
    * Starts all ready tasks.
+   * @param cb An optional callback function to be invoked after all tasks are finished.
    */
-  start(): void;
+  start(cb?: () => void): void;
 }
