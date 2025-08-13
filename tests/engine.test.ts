@@ -1,5 +1,6 @@
 import { expect, vi, it } from "vitest";
 import { createEngine } from "../src/index";
+import { createFuture } from "./utils";
 
 it("should run all tasks", async () => {
   const taskBody1 = vi.fn();
@@ -49,4 +50,48 @@ it("should not start more than once", () => {
   engine.start();
   expect(() => engine.start()).toThrowError();
   expect(taskBody).toHaveBeenCalledOnce();
+});
+
+it("should handle dependencies correctly", async () => {
+  const taskBody1 = vi.fn();
+  const taskBody2 = vi.fn();
+  const taskBody3 = vi.fn();
+
+  const [future, setFutureValue] = createFuture<void>();
+
+  const engine = createEngine();
+  engine.createTask({
+    name: "task 1",
+    execute() {
+      taskBody1();
+    },
+  });
+  const task2 = engine.createTask({
+    name: "task 2",
+    async execute() {
+      await future;
+      taskBody2();
+    },
+  });
+  engine.createTask({
+    name: "task 3",
+    dependencies: [task2],
+    execute() {
+      taskBody3();
+    },
+  });
+
+  setTimeout(() => {
+    // Task 3 must wait for task 2 to complete.
+    expect(taskBody3).toBeCalledTimes(0);
+    setFutureValue();
+  }, 5);
+
+  await new Promise<void>((resolve) => {
+    engine.start(() => resolve());
+  });
+
+  expect(taskBody1).toHaveBeenCalledOnce();
+  expect(taskBody2).toHaveBeenCalledOnce();
+  expect(taskBody3).toHaveBeenCalledOnce();
 });
