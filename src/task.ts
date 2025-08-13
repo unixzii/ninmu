@@ -39,7 +39,7 @@ export function createTask(
     },
     _start(cb) {
       if (this.isStarted) {
-        throw new Error("Task already started");
+        throw new Error(`Task ("${this.options.name}") already started`);
       }
       // We don't need to check the dependencies here, since the engine will ensure
       // that all prerequisites are met before calling this.

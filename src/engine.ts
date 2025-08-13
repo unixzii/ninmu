@@ -1,10 +1,12 @@
 import type { Engine } from "./types.js";
 import type { InternalTask } from "./task.js";
 import { createTask } from "./task.js";
+import { isomorphicQueueMicrotask } from "./utils.js";
 
 export interface InternalEngine extends Engine {
   allTasks: InternalTask[];
   pendingTasks: Set<InternalTask>;
+  runningTasks: Set<InternalTask>;
 
   isStarted: boolean;
   isFinished: boolean;
@@ -22,6 +24,7 @@ function _createEngine(): InternalEngine {
   return {
     allTasks: [],
     pendingTasks: new Set(),
+    runningTasks: new Set(),
     isStarted: false,
     isFinished: false,
     finishCb: undefined,
@@ -30,7 +33,7 @@ function _createEngine(): InternalEngine {
       this.allTasks.push(task);
       this.pendingTasks.add(task);
 
-      setImmediate(() => {
+      isomorphicQueueMicrotask(() => {
         this.checkTasks();
       });
 
@@ -67,12 +70,16 @@ function _createEngine(): InternalEngine {
         }
         hasTaskStarted = true;
         this.pendingTasks.delete(task);
+        this.runningTasks.add(task);
         task._start(() => {
-          this.checkTasks();
+          this.runningTasks.delete(task);
+          isomorphicQueueMicrotask(() => {
+            this.checkTasks();
+          });
         });
       });
 
-      if (!hasTaskStarted) {
+      if (!hasTaskStarted && this.runningTasks.size === 0) {
         throw new Error(
           "No more tasks can start, maybe there is a dependency cycle",
         );
