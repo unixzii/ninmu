@@ -1,6 +1,6 @@
 import { expect, vi, it } from "vitest";
 import { createEngine } from "../src/index";
-import { createFuture } from "./utils";
+import { createFuture, waitMicrotask } from "./utils";
 
 it("should run all tasks", async () => {
   const taskBody1 = vi.fn();
@@ -57,7 +57,7 @@ it("should handle dependencies correctly", async () => {
   const taskBody2 = vi.fn();
   const taskBody3 = vi.fn();
 
-  const [future, setFutureValue] = createFuture<void>();
+  const [taskAwaitable, resumeTask] = createFuture<void>();
 
   const engine = createEngine();
   engine.createTask({
@@ -69,7 +69,7 @@ it("should handle dependencies correctly", async () => {
   const task2 = engine.createTask({
     name: "task 2",
     async execute() {
-      await future;
+      await taskAwaitable;
       taskBody2();
     },
   });
@@ -81,15 +81,16 @@ it("should handle dependencies correctly", async () => {
     },
   });
 
-  setTimeout(() => {
-    // Task 3 must wait for task 2 to complete.
-    expect(taskBody3).toBeCalledTimes(0);
-    setFutureValue();
-  }, 5);
+  const [finished, setFinished] = createFuture<void>();
+  engine.start(() => setFinished());
 
-  await new Promise<void>((resolve) => {
-    engine.start(() => resolve());
-  });
+  await waitMicrotask();
+
+  // Task 3 must wait for task 2 to complete.
+  expect(taskBody3).toBeCalledTimes(0);
+  resumeTask();
+
+  await finished;
 
   expect(taskBody1).toHaveBeenCalledOnce();
   expect(taskBody2).toHaveBeenCalledOnce();

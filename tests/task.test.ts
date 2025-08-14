@@ -1,6 +1,7 @@
 import { expect, vi, it } from "vitest";
 import { createTask } from "../src/task.js";
 import { _createEngine } from "../src/engine.js";
+import { createFuture } from "./utils.js";
 
 it("createTask should always succeed", () => {
   const engine = _createEngine();
@@ -38,23 +39,25 @@ it("should run the task by calling _start()", () => {
 it("should run the async task by calling _start()", async () => {
   const taskBody = vi.fn();
 
+  const [taskAwaitable, resumeTask] = createFuture<void>();
+
   const engine = _createEngine();
   const task = createTask(
     {
       name: "test task",
       async execute() {
-        await new Promise<void>((resolve) => {
-          setTimeout(() => resolve(), 5);
-        });
+        await taskAwaitable;
         taskBody();
       },
     },
     engine,
   );
 
-  await new Promise<void>((resolve) => {
-    task._start(() => resolve());
-  });
+  const [finished, setFinished] = createFuture<void>();
+  task._start(() => setFinished());
+
+  resumeTask();
+  await finished;
 
   expect(taskBody).toHaveBeenCalledOnce();
   expect(task.isFinished).toBeTruthy();
