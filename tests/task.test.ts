@@ -1,7 +1,7 @@
 import { expect, vi, it } from "vitest";
 import { createTask } from "../src/task.js";
 import { _createEngine } from "../src/engine.js";
-import { createFuture } from "./utils.js";
+import { createFuture, waitMicrotask } from "./utils.js";
 
 it("createTask should always succeed", () => {
   const engine = _createEngine();
@@ -84,4 +84,36 @@ it("should not start more than once", () => {
     task._start();
   }).toThrowError();
   expect(taskBody).toHaveBeenCalledOnce();
+});
+
+it("should has correct state", async () => {
+  const [taskAwaitable, resumeTask] = createFuture<void>();
+
+  const engine = _createEngine();
+  const task = createTask(
+    {
+      name: "test task",
+      async execute() {
+        await taskAwaitable;
+      },
+    },
+    engine,
+  );
+
+  expect(task.isStarted).toBe(false);
+  expect(task.isRunning).toBe(false);
+  expect(task.isFinished).toBe(false);
+
+  task._start();
+
+  expect(task.isStarted).toBe(true);
+  expect(task.isRunning).toBe(true);
+  expect(task.isFinished).toBe(false);
+
+  resumeTask();
+  await waitMicrotask();
+
+  expect(task.isStarted).toBe(true);
+  expect(task.isRunning).toBe(false);
+  expect(task.isFinished).toBe(true);
 });

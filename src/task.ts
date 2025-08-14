@@ -2,14 +2,24 @@ import type { Task, TaskOptions } from "./types.js";
 import type { InternalEngine } from "./engine.js";
 import { createObserverCollection } from "./utils.js";
 
+const STATE_IDLE = 0;
+const STATE_STARTED = 1;
+const STATE_FINISHED = 2;
+const STATE_FAILED = 3;
+
+type TaskState =
+  | typeof STATE_IDLE
+  | typeof STATE_STARTED
+  | typeof STATE_FINISHED
+  | typeof STATE_FAILED;
+
 export interface InternalTask extends Task {
   parentTask: InternalTask | undefined;
   childTasks: InternalTask[];
 
   engine: InternalEngine;
 
-  isStarted: boolean;
-  _isFinished: boolean;
+  state: TaskState;
 
   canStart(): boolean;
   _start(): void;
@@ -24,8 +34,14 @@ export function createTask(
 
   return {
     options,
+    get isStarted() {
+      return this.state >= STATE_STARTED;
+    },
+    get isRunning() {
+      return this.state == STATE_STARTED;
+    },
     get isFinished() {
-      return this._isFinished;
+      return this.state == STATE_FINISHED;
     },
     onFinish(observer) {
       return onFinishObservers.register(observer);
@@ -33,8 +49,7 @@ export function createTask(
     parentTask,
     childTasks: [],
     engine,
-    isStarted: false,
-    _isFinished: false,
+    state: STATE_IDLE,
     canStart() {
       const dependencies = this.options.dependencies;
       if (!dependencies) {
@@ -44,15 +59,15 @@ export function createTask(
       return dependencies.findIndex((t) => !t.isFinished) === -1;
     },
     _start() {
-      if (this.isStarted) {
+      if (this.state >= STATE_STARTED) {
         throw new Error(`Task ("${this.options.name}") already started`);
       }
       // We don't need to check the dependencies here, since the engine will ensure
       // that all prerequisites are met before calling this.
-      this.isStarted = true;
+      this.state = STATE_STARTED;
 
       const onDone = () => {
-        this._isFinished = true;
+        this.state = STATE_FINISHED;
         onFinishObservers.emit();
       };
 

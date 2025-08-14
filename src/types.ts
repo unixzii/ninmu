@@ -28,6 +28,16 @@ export interface Task {
   options: TaskOptions;
 
   /**
+   * Returns whether this task has started.
+   */
+  get isStarted(): boolean;
+
+  /**
+   * Returns whether this task is started and currently running.
+   */
+  get isRunning(): boolean;
+
+  /**
    * Returns whether this task has finished.
    */
   get isFinished(): boolean;
