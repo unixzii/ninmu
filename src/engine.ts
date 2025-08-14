@@ -20,7 +20,7 @@ export interface InternalEngine extends Engine {
   checkTasks(): void;
 }
 
-function _createEngine(): InternalEngine {
+export function _createEngine(): InternalEngine {
   return {
     allTasks: [],
     pendingTasks: new Set(),

@@ -3,7 +3,7 @@ export function createFuture<T>(): [Promise<T>, (value: T) => void] {
   const promise = new Promise<T>((resolve) => {
     _resolve = resolve;
   });
-  return [promise, _resolve!!];
+  return [promise, _resolve!];
 }
 
 export function waitMicrotask(): Promise<void> {

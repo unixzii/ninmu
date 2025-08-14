@@ -1,13 +1,15 @@
 import { expect, vi, it } from "vitest";
 import { createTask } from "../src/task.js";
+import { _createEngine } from "../src/engine.js";
 
 it("createTask should always succeed", () => {
+  const engine = _createEngine();
   const task = createTask(
     {
       name: "test task",
       execute() {},
     },
-    {} as any,
+    engine,
   );
   expect(task).toBeDefined();
 });
@@ -16,6 +18,7 @@ it("should run the task by calling _start()", () => {
   const taskBody = vi.fn();
   const cb = vi.fn();
 
+  const engine = _createEngine();
   const task = createTask(
     {
       name: "test task",
@@ -23,7 +26,7 @@ it("should run the task by calling _start()", () => {
         taskBody();
       },
     },
-    {} as any,
+    engine,
   );
   task._start(cb);
 
@@ -35,6 +38,7 @@ it("should run the task by calling _start()", () => {
 it("should run the async task by calling _start()", async () => {
   const taskBody = vi.fn();
 
+  const engine = _createEngine();
   const task = createTask(
     {
       name: "test task",
@@ -45,7 +49,7 @@ it("should run the async task by calling _start()", async () => {
         taskBody();
       },
     },
-    {} as any,
+    engine,
   );
 
   await new Promise<void>((resolve) => {
@@ -59,6 +63,7 @@ it("should run the async task by calling _start()", async () => {
 it("should not start more than once", () => {
   const taskBody = vi.fn();
 
+  const engine = _createEngine();
   const task = createTask(
     {
       name: "test task",
@@ -66,7 +71,7 @@ it("should not start more than once", () => {
         taskBody();
       },
     },
-    {} as any,
+    engine,
   );
 
   task._start(() => {});
