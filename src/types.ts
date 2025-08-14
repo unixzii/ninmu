@@ -1,3 +1,5 @@
+import type { Observer, Disposable } from "./utils.js";
+
 export type TaskOptions = {
   /**
    * Name of this task.
@@ -29,6 +31,11 @@ export interface Task {
    * Returns whether this task has finished.
    */
   get isFinished(): boolean;
+
+  /**
+   * Registers an observer to be notified when this task finishes.
+   */
+  onFinish(observer: Observer<void>): Disposable;
 }
 
 export interface Engine {

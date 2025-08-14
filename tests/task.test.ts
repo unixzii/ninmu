@@ -29,7 +29,8 @@ it("should run the task by calling _start()", () => {
     },
     engine,
   );
-  task._start(cb);
+  task.onFinish(cb);
+  task._start();
 
   expect(taskBody).toHaveBeenCalledOnce();
   expect(cb).toHaveBeenCalledOnce();
@@ -54,7 +55,8 @@ it("should run the async task by calling _start()", async () => {
   );
 
   const [finished, setFinished] = createFuture<void>();
-  task._start(() => setFinished());
+  task.onFinish(() => setFinished());
+  task._start();
 
   resumeTask();
   await finished;
@@ -77,9 +79,9 @@ it("should not start more than once", () => {
     engine,
   );
 
-  task._start(() => {});
+  task._start();
   expect(() => {
-    task._start(() => {});
+    task._start();
   }).toThrowError();
   expect(taskBody).toHaveBeenCalledOnce();
 });

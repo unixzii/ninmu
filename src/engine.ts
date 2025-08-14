@@ -18,6 +18,7 @@ export interface InternalEngine extends Engine {
    * when all tasks are finished.
    */
   checkTasks(): void;
+  postCheckTasks(): void;
 }
 
 export function _createEngine(): InternalEngine {
@@ -30,12 +31,15 @@ export function _createEngine(): InternalEngine {
     finishCb: undefined,
     createTask(options) {
       const task = createTask(options, this);
+      task.onFinish(() => {
+        this.runningTasks.delete(task);
+        this.postCheckTasks();
+      });
+
       this.allTasks.push(task);
       this.pendingTasks.add(task);
 
-      isomorphicQueueMicrotask(() => {
-        this.checkTasks();
-      });
+      this.postCheckTasks();
 
       return task;
     },
@@ -71,12 +75,7 @@ export function _createEngine(): InternalEngine {
         hasTaskStarted = true;
         this.pendingTasks.delete(task);
         this.runningTasks.add(task);
-        task._start(() => {
-          this.runningTasks.delete(task);
-          isomorphicQueueMicrotask(() => {
-            this.checkTasks();
-          });
-        });
+        task._start();
       });
 
       if (!hasTaskStarted && this.runningTasks.size === 0) {
@@ -84,6 +83,11 @@ export function _createEngine(): InternalEngine {
           "No more tasks can start, maybe there is a dependency cycle",
         );
       }
+    },
+    postCheckTasks() {
+      isomorphicQueueMicrotask(() => {
+        this.checkTasks();
+      });
     },
   };
 }
