@@ -1,7 +1,7 @@
 import { expect, vi, it } from "vitest";
-import { createTask } from "../src/task.js";
-import { _createEngine } from "../src/engine.js";
-import { createFuture, waitMicrotask } from "./utils.js";
+import { createTask } from "../src/task";
+import { _createEngine } from "../src/engine";
+import { createFuture, waitMicrotask } from "./utils";
 
 it("createTask should always succeed", () => {
   const engine = _createEngine();

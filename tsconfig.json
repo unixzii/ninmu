@@ -2,13 +2,11 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "module": "nodenext",
+    "module": "esnext",
     "target": "esnext",
     "lib": ["esnext"],
     "types": ["node"],
-    "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
 
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

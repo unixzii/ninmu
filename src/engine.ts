@@ -1,7 +1,7 @@
-import type { Engine } from "./types.js";
-import type { InternalTask } from "./task.js";
-import { createTask } from "./task.js";
-import { isomorphicQueueMicrotask } from "./utils.js";
+import type { Engine } from "./types";
+import type { InternalTask } from "./task";
+import { createTask } from "./task";
+import { isomorphicQueueMicrotask } from "./utils";
 
 export interface InternalEngine extends Engine {
   allTasks: InternalTask[];

@@ -1,2 +1,2 @@
-export type * from "./types.js";
-export { createEngine } from "./engine.js";
+export type * from "./types";
+export { createEngine } from "./engine";

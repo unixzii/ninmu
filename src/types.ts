@@ -1,4 +1,4 @@
-import type { Observer, Disposable } from "./utils.js";
+import type { Observer, Disposable } from "./utils";
 
 export type TaskOptions = {
   /**

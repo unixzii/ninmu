@@ -1,6 +1,6 @@
-import type { Task, TaskOptions } from "./types.js";
-import type { InternalEngine } from "./engine.js";
-import { createObserverCollection } from "./utils.js";
+import type { Task, TaskOptions } from "./types";
+import type { InternalEngine } from "./engine";
+import { createObserverCollection } from "./utils";
 
 const STATE_IDLE = 0;
 const STATE_STARTED = 1;
