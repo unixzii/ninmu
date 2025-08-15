@@ -65,6 +65,50 @@ it("should run the async task by calling _start()", async () => {
   expect(task.isFinished).toBeTruthy();
 });
 
+it("should run throwing task safely", () => {
+  const cb = vi.fn();
+  const mockErr = new Error("mock error");
+
+  const engine = _createEngine();
+  const task = createTask(
+    {
+      name: "test task",
+      execute() {
+        throw mockErr;
+      },
+    },
+    engine,
+  );
+  task.onFail(cb);
+  task._start();
+
+  expect(cb).toHaveBeenCalledWith(mockErr);
+  expect(task.isFailed).toBeTruthy();
+});
+
+it("should run throwing async task safely", async () => {
+  const mockErr = new Error("mock error");
+
+  const engine = _createEngine();
+  const task = createTask(
+    {
+      name: "test task",
+      async execute() {
+        await waitMicrotask();
+        throw mockErr;
+      },
+    },
+    engine,
+  );
+
+  const [failed, setFailed] = createFuture<unknown>();
+  task.onFail(setFailed);
+  task._start();
+
+  expect(await failed).toEqual(mockErr);
+  expect(task.isFailed).toBeTruthy();
+});
+
 it("should not start more than once", () => {
   const taskBody = vi.fn();
 

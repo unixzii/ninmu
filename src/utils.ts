@@ -1,3 +1,16 @@
+export function isPromise(obj: unknown): obj is PromiseLike<unknown> {
+  if (!obj) {
+    return false;
+  }
+  if (typeof obj !== "object" && typeof obj !== "function") {
+    return false;
+  }
+  if ("then" in obj && typeof obj.then === "function") {
+    return true;
+  }
+  return false;
+}
+
 export function isomorphicQueueMicrotask(callback: () => void) {
   queueMicrotask(callback);
 }

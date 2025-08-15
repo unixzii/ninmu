@@ -1,6 +1,11 @@
 import type { Task, TaskOptions } from "./types";
 import type { InternalEngine } from "./engine";
-import { createObserverCollection } from "./utils";
+import {
+  type Disposable,
+  type Observer,
+  isPromise,
+  createObserverCollection,
+} from "./utils";
 
 const STATE_IDLE = 0;
 const STATE_STARTED = 1;
@@ -20,9 +25,30 @@ export interface InternalTask extends Task {
   engine: InternalEngine;
 
   state: TaskState;
+  onEnd(observer: Observer<void>): Disposable;
 
   canStart(): boolean;
   _start(): void;
+}
+
+function runGuarded(
+  fn: () => unknown,
+  onDone: (thrown?: { err: unknown }) => void,
+) {
+  try {
+    const maybePromise = fn();
+    if (!isPromise(maybePromise)) {
+      onDone();
+      return;
+    }
+
+    const nextPromise = maybePromise.then(() => onDone());
+    if ("catch" in nextPromise && typeof nextPromise.catch === "function") {
+      nextPromise.catch((err: unknown) => onDone({ err }));
+    }
+  } catch (err) {
+    onDone({ err });
+  }
 }
 
 export function createTask(
@@ -31,6 +57,8 @@ export function createTask(
   parentTask?: InternalTask,
 ): InternalTask {
   const onFinishObservers = createObserverCollection<void>();
+  const onFailObservers = createObserverCollection<unknown>();
+  const onEndObservers = createObserverCollection<void>();
 
   return {
     options,
@@ -38,13 +66,22 @@ export function createTask(
       return this.state >= STATE_STARTED;
     },
     get isRunning() {
-      return this.state == STATE_STARTED;
+      return this.state === STATE_STARTED;
     },
     get isFinished() {
-      return this.state == STATE_FINISHED;
+      return this.state === STATE_FINISHED;
+    },
+    get isFailed() {
+      return this.state === STATE_FAILED;
     },
     onFinish(observer) {
       return onFinishObservers.register(observer);
+    },
+    onFail(observer) {
+      return onFailObservers.register(observer);
+    },
+    onEnd(observer) {
+      return onEndObservers.register(observer);
     },
     parentTask,
     childTasks: [],
@@ -66,19 +103,16 @@ export function createTask(
       // that all prerequisites are met before calling this.
       this.state = STATE_STARTED;
 
-      const onDone = () => {
-        this.state = STATE_FINISHED;
-        onFinishObservers.emit();
-      };
-
-      const promiseOrVoid = this.options.execute();
-      if (promiseOrVoid instanceof Promise) {
-        promiseOrVoid.then(() => {
-          onDone();
-        });
-      } else {
-        onDone();
-      }
+      runGuarded(this.options.execute, (thrown) => {
+        if (thrown) {
+          this.state = STATE_FAILED;
+          onFailObservers.emit(thrown.err);
+        } else {
+          this.state = STATE_FINISHED;
+          onFinishObservers.emit();
+        }
+        onEndObservers.emit();
+      });
     },
   };
 }

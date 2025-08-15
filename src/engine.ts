@@ -31,7 +31,7 @@ export function _createEngine(): InternalEngine {
     finishCb: undefined,
     createTask(options) {
       const task = createTask(options, this);
-      task.onFinish(() => {
+      task.onEnd(() => {
         this.runningTasks.delete(task);
         this.postCheckTasks();
       });

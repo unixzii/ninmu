@@ -43,9 +43,19 @@ export interface Task {
   get isFinished(): boolean;
 
   /**
+   * Returns whether this task has failed.
+   */
+  get isFailed(): boolean;
+
+  /**
    * Registers an observer to be notified when this task finishes.
    */
   onFinish(observer: Observer<void>): Disposable;
+
+  /**
+   * Registers an observer to be notified when this task fails.
+   */
+  onFail(observer: Observer<unknown>): Disposable;
 }
 
 export interface Engine {
