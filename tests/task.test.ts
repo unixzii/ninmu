@@ -1,10 +1,14 @@
 import { expect, vi, it } from "vitest";
 import { createTask } from "../src/task";
-import { _createEngine } from "../src/engine";
+import { type InternalEngine, createEngine } from "../src/engine";
 import { createFuture, waitMicrotask } from "./utils";
 
+function createInternalEngine() {
+  return createEngine() as InternalEngine;
+}
+
 it("createTask should always succeed", () => {
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -19,7 +23,7 @@ it("should run the task by calling _start()", () => {
   const taskBody = vi.fn();
   const cb = vi.fn();
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -42,7 +46,7 @@ it("should run the async task by calling _start()", async () => {
 
   const [taskAwaitable, resumeTask] = createFuture<void>();
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -69,7 +73,7 @@ it("should run throwing task safely", () => {
   const cb = vi.fn();
   const mockErr = new Error("mock error");
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -89,7 +93,7 @@ it("should run throwing task safely", () => {
 it("should run throwing async task safely", async () => {
   const mockErr = new Error("mock error");
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -112,7 +116,7 @@ it("should run throwing async task safely", async () => {
 it("should not start more than once", () => {
   const taskBody = vi.fn();
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",
@@ -133,7 +137,7 @@ it("should not start more than once", () => {
 it("should has correct state", async () => {
   const [taskAwaitable, resumeTask] = createFuture<void>();
 
-  const engine = _createEngine();
+  const engine = createInternalEngine();
   const task = createTask(
     {
       name: "test task",

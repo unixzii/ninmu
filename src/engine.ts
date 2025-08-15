@@ -21,7 +21,7 @@ export interface InternalEngine extends Engine {
   postCheckTasks(): void;
 }
 
-export function _createEngine(): InternalEngine {
+export function createEngine(): Engine {
   return {
     allTasks: [],
     pendingTasks: new Set(),
@@ -29,6 +29,7 @@ export function _createEngine(): InternalEngine {
     isStarted: false,
     isFinished: false,
     finishCb: undefined,
+
     createTask(options) {
       const task = createTask(options, this);
       task.onEnd(() => {
@@ -89,9 +90,5 @@ export function _createEngine(): InternalEngine {
         this.checkTasks();
       });
     },
-  };
-}
-
-export function createEngine(): Engine {
-  return _createEngine();
+  } as InternalEngine;
 }

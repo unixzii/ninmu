@@ -25,10 +25,11 @@ export interface InternalTask extends Task {
   engine: InternalEngine;
 
   state: TaskState;
-  onEnd(observer: Observer<void>): Disposable;
 
   canStart(): boolean;
   _start(): void;
+
+  onEnd(observer: Observer<void>): Disposable;
 }
 
 function runGuarded(
@@ -62,6 +63,11 @@ export function createTask(
 
   return {
     options,
+    parentTask,
+    childTasks: [],
+    engine,
+    state: STATE_IDLE,
+
     get isStarted() {
       return this.state >= STATE_STARTED;
     },
@@ -74,19 +80,7 @@ export function createTask(
     get isFailed() {
       return this.state === STATE_FAILED;
     },
-    onFinish(observer) {
-      return onFinishObservers.register(observer);
-    },
-    onFail(observer) {
-      return onFailObservers.register(observer);
-    },
-    onEnd(observer) {
-      return onEndObservers.register(observer);
-    },
-    parentTask,
-    childTasks: [],
-    engine,
-    state: STATE_IDLE,
+
     canStart() {
       const dependencies = this.options.dependencies;
       if (!dependencies) {
@@ -113,6 +107,15 @@ export function createTask(
         }
         onEndObservers.emit();
       });
+    },
+    onFinish(observer) {
+      return onFinishObservers.register(observer);
+    },
+    onFail(observer) {
+      return onFailObservers.register(observer);
+    },
+    onEnd(observer) {
+      return onEndObservers.register(observer);
     },
   };
 }
