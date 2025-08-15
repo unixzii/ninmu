@@ -66,7 +66,11 @@ export interface Engine {
 
   /**
    * Starts all ready tasks.
-   * @param cb An optional callback function to be invoked after all tasks are finished.
    */
-  start(cb?: () => void): void;
+  start(): void;
+
+  /**
+   * Registers an observer to be notified when all tasks complete.
+   */
+  onComplete(observer: Observer<void>): Disposable;
 }

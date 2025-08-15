@@ -27,9 +27,11 @@ it("should run all tasks", async () => {
     },
   });
 
-  await new Promise<void>((resolve) => {
-    engine.start(() => resolve());
-  });
+  const [finished, setFinished] = createFuture<void>();
+  engine.onComplete(setFinished);
+  engine.start();
+
+  await finished;
 
   expect(taskBody1).toHaveBeenCalledOnce();
   expect(taskBody2).toHaveBeenCalledOnce();
@@ -82,7 +84,8 @@ it("should handle dependencies correctly", async () => {
   });
 
   const [finished, setFinished] = createFuture<void>();
-  engine.start(() => setFinished());
+  engine.onComplete(setFinished);
+  engine.start();
 
   await waitMicrotask();
 

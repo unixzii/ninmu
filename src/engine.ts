@@ -1,7 +1,7 @@
 import type { Engine } from "./types";
 import type { InternalTask } from "./task";
 import { createTask } from "./task";
-import { isomorphicQueueMicrotask } from "./utils";
+import { isomorphicQueueMicrotask, createObserverCollection } from "./utils";
 
 export interface InternalEngine extends Engine {
   allTasks: InternalTask[];
@@ -10,8 +10,6 @@ export interface InternalEngine extends Engine {
 
   isStarted: boolean;
   isFinished: boolean;
-
-  finishCb: (() => void) | undefined;
 
   /**
    * Checks if we can start some tasks. And notify the observers
@@ -22,6 +20,8 @@ export interface InternalEngine extends Engine {
 }
 
 export function createEngine(): Engine {
+  const onCompleteObservers = createObserverCollection<void>();
+
   return {
     allTasks: [],
     pendingTasks: new Set(),
@@ -44,14 +44,16 @@ export function createEngine(): Engine {
 
       return task;
     },
-    start(cb) {
+    start() {
       if (this.isStarted) {
         throw new Error("Engine already started");
       }
       this.isStarted = true;
-      this.finishCb = cb;
 
       this.checkTasks();
+    },
+    onComplete(observer) {
+      return onCompleteObservers.register(observer);
     },
     checkTasks() {
       if (this.isFinished) {
@@ -62,7 +64,7 @@ export function createEngine(): Engine {
         const allFinished = this.allTasks.every((task) => task.isFinished);
         if (allFinished) {
           this.isFinished = true;
-          this.finishCb?.();
+          onCompleteObservers.emit();
         }
         return;
       }
