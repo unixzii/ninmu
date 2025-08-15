@@ -9,6 +9,9 @@ export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.recommended,
   {
+    rules: { eqeqeq: "error" },
+  },
+  {
     files: ["tests/**/*"],
     ...vitest.configs.recommended,
   },
