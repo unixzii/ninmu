@@ -9,7 +9,7 @@
     "clean": "rm -rf dist",
     "test": "vitest run --reporter verbose",
     "dev": "vitest --reporter verbose",
-    "lint": "eslint ."
+    "lint": "tsc -p tsconfig.json --noEmit && eslint ."
   },
   "keywords": [],
   "author": "Cyandev <unixzii@gmail.com>",
