@@ -60,6 +60,16 @@ export interface Task {
 
 export interface Engine {
   /**
+   * Returns whether this engine has started.
+   */
+  get isStarted(): boolean;
+
+  /**
+   * Returns whether there are any tasks running.
+   */
+  get isRunning(): boolean;
+
+  /**
    * Creates a top-level task.
    */
   createTask(options: TaskOptions): Task;
@@ -73,4 +83,9 @@ export interface Engine {
    * Registers an observer to be notified when all tasks complete.
    */
   onComplete(observer: Observer<void>): Disposable;
+
+  /**
+   * Registers an observer to be notified when there is an error in any task.
+   */
+  onError(observer: Observer<void>): Disposable;
 }

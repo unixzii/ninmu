@@ -7,13 +7,21 @@ import {
   createScheduler,
 } from "./utils";
 
+const STATE_IDLE = 0;
+const STATE_STARTED = 1;
+const STATE_SETTLED = 2;
+
+type EngineState =
+  | typeof STATE_IDLE
+  | typeof STATE_STARTED
+  | typeof STATE_SETTLED;
+
 export interface InternalEngine extends Engine {
   allTasks: InternalTask[];
   pendingTasks: Set<InternalTask>;
   runningTasks: Set<InternalTask>;
 
-  isStarted: boolean;
-  isFinished: boolean;
+  state: EngineState;
 
   /**
    * Checks if we can start some tasks. And notify the observers
@@ -26,13 +34,21 @@ class EngineImpl implements InternalEngine {
   allTasks: InternalTask[] = [];
   pendingTasks = new Set<InternalTask>();
   runningTasks = new Set<InternalTask>();
-  isStarted = false;
-  isFinished = false;
+  state: EngineState = STATE_IDLE;
 
   onCompleteObservers = createObserverCollection<void>();
+  onErrorObservers = createObserverCollection<void>();
   checkTasksScheduler = createScheduler(() => {
     this.checkTasks();
   });
+
+  get isStarted(): boolean {
+    return this.state >= STATE_STARTED;
+  }
+
+  get isRunning(): boolean {
+    return this.state !== STATE_SETTLED;
+  }
 
   createTask(options: TaskOptions) {
     const task = createTask(options, this);
@@ -53,7 +69,7 @@ class EngineImpl implements InternalEngine {
     if (this.isStarted) {
       throw new Error("Engine already started");
     }
-    this.isStarted = true;
+    this.state = STATE_STARTED;
 
     this.checkTasks();
   }
@@ -62,15 +78,19 @@ class EngineImpl implements InternalEngine {
     return this.onCompleteObservers.register(observer);
   }
 
+  onError(observer: Observer<void>) {
+    return this.onErrorObservers.register(observer);
+  }
+
   checkTasks() {
-    if (this.isFinished) {
+    if (!this.isRunning) {
       return;
     }
 
     if (this.pendingTasks.size === 0) {
-      const allFinished = this.allTasks.every((task) => task.isFinished);
-      if (allFinished) {
-        this.isFinished = true;
+      const allSettled = this.allTasks.every((task) => !task.isRunning);
+      if (allSettled) {
+        this.state = STATE_SETTLED;
         this.onCompleteObservers.emit();
       }
       return;
