@@ -43,3 +43,24 @@ export function createObserverCollection<E>(): ObserverCollection<E> {
     },
   };
 }
+
+export interface Scheduler {
+  schedule(): void;
+}
+
+export function createScheduler(fn: () => void): Scheduler {
+  let scheduled = false;
+  return {
+    schedule() {
+      if (scheduled) {
+        return;
+      }
+
+      scheduled = true;
+      isomorphicQueueMicrotask(() => {
+        scheduled = false;
+        fn();
+      });
+    },
+  };
+}
