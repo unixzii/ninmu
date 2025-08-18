@@ -80,12 +80,12 @@ export interface Engine {
   start(): void;
 
   /**
-   * Registers an observer to be notified when all tasks complete.
+   * Registers an observer to be notified when all tasks have ended.
    */
-  onComplete(observer: Observer<void>): Disposable;
+  onEnd(observer: Observer<void>): Disposable;
 
   /**
    * Registers an observer to be notified when there is an error in any task.
    */
-  onError(observer: Observer<void>): Disposable;
+  onError(observer: Observer<Task>): Disposable;
 }

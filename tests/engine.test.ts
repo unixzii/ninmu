@@ -28,7 +28,7 @@ it("should run all tasks", async () => {
   });
 
   const [finished, setFinished] = createFuture<void>();
-  engine.onComplete(setFinished);
+  engine.onEnd(setFinished);
   engine.start();
 
   await finished;
@@ -84,7 +84,7 @@ it("should handle dependencies correctly", async () => {
   });
 
   const [finished, setFinished] = createFuture<void>();
-  engine.onComplete(setFinished);
+  engine.onEnd(setFinished);
   engine.start();
 
   await waitMicrotask();
@@ -98,4 +98,42 @@ it("should handle dependencies correctly", async () => {
   expect(taskBody1).toHaveBeenCalledOnce();
   expect(taskBody2).toHaveBeenCalledOnce();
   expect(taskBody3).toHaveBeenCalledOnce();
+});
+
+it("should abort when some task fails", async () => {
+  const taskBody1 = vi.fn();
+  const taskBody3 = vi.fn();
+
+  const engine = createEngine();
+  engine.createTask({
+    name: "task 1",
+    execute() {
+      taskBody1();
+    },
+  });
+  const task2 = engine.createTask({
+    name: "task 2",
+    async execute() {
+      throw new Error("mock error");
+    },
+  });
+  engine.createTask({
+    name: "task 3",
+    dependencies: [task2],
+    execute() {
+      taskBody3();
+    },
+  });
+
+  const onError = vi.fn();
+  const [finished, setFinished] = createFuture<void>();
+  engine.onError(onError);
+  engine.onEnd(setFinished);
+  engine.start();
+
+  await finished;
+
+  expect(onError).toHaveBeenCalledWith(task2);
+  expect(taskBody1).toHaveBeenCalledOnce();
+  expect(taskBody3).toBeCalledTimes(0);
 });

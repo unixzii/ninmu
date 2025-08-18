@@ -1,4 +1,4 @@
-import type { Engine, TaskOptions } from "./types";
+import type { Engine, TaskOptions, Task } from "./types";
 import type { InternalTask } from "./task";
 import { createTask } from "./task";
 import {
@@ -35,9 +35,10 @@ class EngineImpl implements InternalEngine {
   pendingTasks = new Set<InternalTask>();
   runningTasks = new Set<InternalTask>();
   state: EngineState = STATE_IDLE;
+  hasErrors = false;
 
-  onCompleteObservers = createObserverCollection<void>();
-  onErrorObservers = createObserverCollection<void>();
+  onEndObservers = createObserverCollection<void>();
+  onErrorObservers = createObserverCollection<Task>();
   checkTasksScheduler = createScheduler(() => {
     this.checkTasks();
   });
@@ -53,6 +54,11 @@ class EngineImpl implements InternalEngine {
   createTask(options: TaskOptions) {
     const task = createTask(options, this);
     task.onEnd(() => {
+      if (task.isFailed) {
+        this.hasErrors = true;
+        this.onErrorObservers.emit(task);
+      }
+
       this.runningTasks.delete(task);
       this.checkTasksScheduler.schedule();
     });
@@ -74,11 +80,11 @@ class EngineImpl implements InternalEngine {
     this.checkTasks();
   }
 
-  onComplete(observer: Observer<void>) {
-    return this.onCompleteObservers.register(observer);
+  onEnd(observer: Observer<void>) {
+    return this.onEndObservers.register(observer);
   }
 
-  onError(observer: Observer<void>) {
+  onError(observer: Observer<Task>) {
     return this.onErrorObservers.register(observer);
   }
 
@@ -87,11 +93,11 @@ class EngineImpl implements InternalEngine {
       return;
     }
 
-    if (this.pendingTasks.size === 0) {
+    if (this.hasErrors || this.pendingTasks.size === 0) {
       const allSettled = this.allTasks.every((task) => !task.isRunning);
       if (allSettled) {
         this.state = STATE_SETTLED;
-        this.onCompleteObservers.emit();
+        this.onEndObservers.emit();
       }
       return;
     }
