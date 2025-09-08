@@ -2,6 +2,7 @@ import type { Engine, TaskOptions, Task } from "./types";
 import type { InternalTask } from "./task";
 import { createTask } from "./task";
 import {
+  type Disposable,
   type Observer,
   createObserverCollection,
   createScheduler,
@@ -39,6 +40,7 @@ class EngineImpl implements InternalEngine {
 
   onEndObservers = createObserverCollection<void>();
   onErrorObservers = createObserverCollection<Task>();
+  onUpdateObservers = createObserverCollection<Task>();
   checkTasksScheduler = createScheduler(() => {
     this.checkTasks();
   });
@@ -61,12 +63,14 @@ class EngineImpl implements InternalEngine {
 
       this.runningTasks.delete(task);
       this.checkTasksScheduler.schedule();
+      this.onUpdateObservers.emit(task);
     });
 
     this.allTasks.push(task);
     this.pendingTasks.add(task);
 
     this.checkTasksScheduler.schedule();
+    this.onUpdateObservers.emit(task);
 
     return task;
   }
@@ -86,6 +90,10 @@ class EngineImpl implements InternalEngine {
 
   onError(observer: Observer<Task>) {
     return this.onErrorObservers.register(observer);
+  }
+
+  onUpdate(observer: Observer<Task>): Disposable {
+    return this.onUpdateObservers.register(observer);
   }
 
   checkTasks() {
@@ -108,10 +116,13 @@ class EngineImpl implements InternalEngine {
       if (!task.canStart()) {
         return;
       }
+
       hasTaskStarted = true;
       this.pendingTasks.delete(task);
       this.runningTasks.add(task);
+
       task._start();
+      this.onUpdateObservers.emit(task);
     });
 
     if (!hasTaskStarted && this.runningTasks.size === 0) {

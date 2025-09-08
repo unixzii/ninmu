@@ -97,4 +97,9 @@ export interface Engine {
    * Registers an observer to be notified when there is an error in any task.
    */
   onError(observer: Observer<Task>): Disposable;
+
+  /**
+   * Registers an observer to be notified when there is an update in any task.
+   */
+  onUpdate(observer: Observer<Task>): Disposable;
 }

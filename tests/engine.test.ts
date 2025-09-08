@@ -1,5 +1,5 @@
 import { expect, vi, it } from "vitest";
-import { createEngine } from "../src/index";
+import { type Task, createEngine } from "../src/index";
 import { createFuture, waitMicrotask } from "./utils";
 
 it("should run all tasks", async () => {
@@ -177,4 +177,42 @@ it("should handle child tasks correctly", async () => {
   await finished;
 
   expect(taskBody).toHaveBeenCalledOnce();
+});
+
+it("should emit events when tasks update", async () => {
+  const events: Task[] = [];
+
+  const [taskAwaitable, resumeTask] = createFuture<void>();
+
+  const engine = createEngine();
+  engine.onUpdate((task) => {
+    events.push(task);
+  });
+
+  const task1 = engine.createTask({
+    name: "task 1",
+    async execute() {
+      await taskAwaitable;
+    },
+  });
+  const task2 = engine.createTask({
+    name: "task 2",
+    dependencies: [task1],
+    execute() {},
+  });
+
+  expect(events).toEqual([task1, task2]);
+
+  const [finished, setFinished] = createFuture<void>();
+  engine.onEnd(setFinished);
+  engine.start();
+
+  // Task 1 should have started.
+  expect(events).toEqual([task1, task2, task1]);
+
+  resumeTask();
+  await finished;
+
+  // Task 1 finished and then task 2 can be started.
+  expect(events).toEqual([task1, task2, task1, task1, task2, task2]);
 });
