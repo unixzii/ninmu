@@ -89,7 +89,7 @@ class EngineImpl implements InternalEngine {
   }
 
   checkTasks() {
-    if (!this.isRunning) {
+    if (!this.isStarted || !this.isRunning) {
       return;
     }
 

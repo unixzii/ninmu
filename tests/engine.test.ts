@@ -137,3 +137,44 @@ it("should abort when some task fails", async () => {
   expect(taskBody1).toHaveBeenCalledOnce();
   expect(taskBody3).toBeCalledTimes(0);
 });
+
+it("should handle child tasks correctly", async () => {
+  const taskBody = vi.fn();
+  const [taskAwaitable, resumeTask] = createFuture<void>();
+
+  const engine = createEngine();
+  const parentTask = engine.createTask({
+    name: "parent task",
+    execute() {},
+  });
+  const childTask = parentTask.createTask({
+    name: "child task",
+    execute() {},
+  });
+  childTask.createTask({
+    name: "grandchild task",
+    async execute() {
+      await taskAwaitable;
+    },
+  });
+  engine.createTask({
+    name: "test task",
+    dependencies: [parentTask],
+    execute() {
+      taskBody();
+    },
+  });
+
+  const [finished, setFinished] = createFuture<void>();
+  engine.onEnd(setFinished);
+  engine.start();
+
+  await waitMicrotask();
+
+  expect(taskBody).toBeCalledTimes(0);
+
+  resumeTask();
+  await finished;
+
+  expect(taskBody).toHaveBeenCalledOnce();
+});

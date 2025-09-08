@@ -1,5 +1,5 @@
 import { expect, vi, it } from "vitest";
-import { createTask } from "../src/task";
+import { type InternalTask, createTask } from "../src/task";
 import { type InternalEngine, createEngine } from "../src/engine";
 import { createFuture, waitMicrotask } from "./utils";
 
@@ -164,4 +164,34 @@ it("should has correct state", async () => {
   expect(task.isStarted).toBe(true);
   expect(task.isRunning).toBe(false);
   expect(task.isFinished).toBe(true);
+});
+
+it("isTreeFinished() should have correct value", async () => {
+  const [taskAwaitable, resumeTask] = createFuture<void>();
+
+  const engine = createInternalEngine();
+  const parentTask = createTask(
+    {
+      name: "parent task",
+      execute() {},
+    },
+    engine,
+  );
+  const childTask = parentTask.createTask({
+    name: "child task",
+    async execute() {
+      await taskAwaitable;
+    },
+  }) as InternalTask;
+
+  parentTask._start();
+  childTask._start();
+
+  expect(parentTask.isFinished).toBe(true);
+  expect(parentTask.isTreeFinished()).toBe(false);
+
+  resumeTask();
+  await waitMicrotask();
+
+  expect(parentTask.isTreeFinished()).toBe(true);
 });

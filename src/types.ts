@@ -12,6 +12,8 @@ export type TaskOptions = {
 
   /**
    * A set of tasks that are required to be finished successfully before this task starts.
+   *
+   * If the dependent task has child tasks, this task will also wait for all of them to be finished.
    */
   dependencies?: Task[];
 
@@ -46,6 +48,13 @@ export interface Task {
    * Returns whether this task has failed.
    */
   get isFailed(): boolean;
+
+  /**
+   * Creates a child task.
+   *
+   * This method can only be called before the task ends.
+   */
+  createTask(options: TaskOptions): Task;
 
   /**
    * Registers an observer to be notified when this task finishes.

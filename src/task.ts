@@ -21,10 +21,10 @@ type TaskState =
 export interface InternalTask extends Task {
   parentTask: InternalTask | undefined;
   childTasks: InternalTask[];
-
   engine: InternalEngine;
-
   state: TaskState;
+
+  isTreeFinished(): boolean;
 
   canStart(): boolean;
   _start(): void;
@@ -81,13 +81,29 @@ export function createTask(
       return this.state === STATE_FAILED;
     },
 
+    createTask(options) {
+      if (this.state > STATE_STARTED) {
+        throw new Error("Cannot create child tasks in the current state");
+      }
+
+      const task = this.engine.createTask(options);
+      this.childTasks.push(task as InternalTask);
+      return task;
+    },
+    isTreeFinished() {
+      if (!this.isFinished) {
+        return false;
+      }
+
+      return this.childTasks.every((t) => t.isTreeFinished());
+    },
     canStart() {
       const dependencies = this.options.dependencies;
       if (!dependencies) {
         // Task is always runnable when it has no dependencies.
         return true;
       }
-      return dependencies.findIndex((t) => !t.isFinished) === -1;
+      return dependencies.every((t) => (t as InternalTask).isTreeFinished());
     },
     _start() {
       if (this.state >= STATE_STARTED) {
