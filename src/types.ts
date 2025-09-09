@@ -20,7 +20,7 @@ export type TaskOptions = {
   /**
    * The function that this task executes. It can be async.
    */
-  execute: () => void | Promise<void>;
+  execute: (this: Task) => void | Promise<void>;
 };
 
 export interface Task {

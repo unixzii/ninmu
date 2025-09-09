@@ -116,7 +116,7 @@ export function createTask(
       // that all prerequisites are met before calling this.
       this.state = STATE_STARTED;
 
-      runGuarded(this.options.execute, (thrown) => {
+      runGuarded(this.options.execute.bind(this), (thrown) => {
         if (thrown) {
           this.state = STATE_FAILED;
           onFailObservers.emit(thrown.err);

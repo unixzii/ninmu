@@ -195,3 +195,22 @@ it("isTreeFinished() should have correct value", async () => {
 
   expect(parentTask.isTreeFinished()).toBe(true);
 });
+
+it("should execute with correct context", () => {
+  const taskBody = vi.fn();
+
+  const engine = createInternalEngine();
+  const task = createTask(
+    {
+      name: "test task",
+      execute() {
+        taskBody(this);
+      },
+    },
+    engine,
+  );
+
+  task._start();
+
+  expect(taskBody).toHaveBeenCalledWith(task);
+});
