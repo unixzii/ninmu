@@ -30,6 +30,11 @@ export interface Task {
   options: TaskOptions;
 
   /**
+   * The child tasks of this task.
+   */
+  get childTasks(): Task[];
+
+  /**
    * Returns whether this task has started.
    */
   get isStarted(): boolean;
@@ -68,6 +73,11 @@ export interface Task {
 }
 
 export interface Engine {
+  /**
+   * Top-level tasks.
+   */
+  get tasks(): Task[];
+
   /**
    * Returns whether this engine has started.
    */

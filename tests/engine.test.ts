@@ -216,3 +216,17 @@ it("should emit events when tasks update", async () => {
   // Task 1 finished and then task 2 can be started.
   expect(events).toEqual([task1, task2, task1, task1, task2, task2]);
 });
+
+it("should return correct tasks", () => {
+  const engine = createEngine();
+  const task1 = engine.createTask({
+    name: "task 1",
+    execute() {},
+  });
+  const task2 = engine.createTask({
+    name: "task 2",
+    execute() {},
+  });
+
+  expect(engine.tasks).toEqual([task1, task2]);
+});

@@ -24,6 +24,8 @@ export interface InternalEngine extends Engine {
 
   state: EngineState;
 
+  _createTask(options: TaskOptions, topLevel: boolean): InternalTask;
+
   /**
    * Checks if we can start some tasks. And notify the observers
    * when all tasks are finished.
@@ -33,6 +35,7 @@ export interface InternalEngine extends Engine {
 
 class EngineImpl implements InternalEngine {
   allTasks: InternalTask[] = [];
+  topLevelTasks: InternalTask[] = [];
   pendingTasks = new Set<InternalTask>();
   runningTasks = new Set<InternalTask>();
   state: EngineState = STATE_IDLE;
@@ -45,6 +48,10 @@ class EngineImpl implements InternalEngine {
     this.checkTasks();
   });
 
+  get tasks(): Task[] {
+    return [...this.topLevelTasks];
+  }
+
   get isStarted(): boolean {
     return this.state >= STATE_STARTED;
   }
@@ -53,7 +60,7 @@ class EngineImpl implements InternalEngine {
     return this.state !== STATE_SETTLED;
   }
 
-  createTask(options: TaskOptions) {
+  _createTask(options: TaskOptions, topLevel: boolean) {
     const task = createTask(options, this);
     task.onEnd(() => {
       if (task.isFailed) {
@@ -67,12 +74,19 @@ class EngineImpl implements InternalEngine {
     });
 
     this.allTasks.push(task);
+    if (topLevel) {
+      this.topLevelTasks.push(task);
+    }
     this.pendingTasks.add(task);
 
     this.checkTasksScheduler.schedule();
     this.onUpdateObservers.emit(task);
 
     return task;
+  }
+
+  createTask(options: TaskOptions): Task {
+    return this._createTask(options, true);
   }
 
   start() {
