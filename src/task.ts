@@ -89,7 +89,7 @@ export function createTask(
         throw new Error("Cannot create child tasks in the current state");
       }
 
-      const task = this.engine._createTask(options, false);
+      const task = this.engine._createTask(options, this);
       this._childTasks.push(task as InternalTask);
       return task;
     },

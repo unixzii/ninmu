@@ -1,4 +1,5 @@
 import type { Observer, Disposable } from "./utils";
+import type { NinmuPlugin } from "./plugin";
 
 export type TaskOptions = {
   /**
@@ -87,6 +88,11 @@ export interface Engine {
    * Returns whether there are any tasks running.
    */
   get isRunning(): boolean;
+
+  /**
+   * Registers a plugin.
+   */
+  use(plugin: NinmuPlugin): void;
 
   /**
    * Creates a top-level task.

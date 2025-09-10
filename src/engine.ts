@@ -7,6 +7,7 @@ import {
   createObserverCollection,
   createScheduler,
 } from "./utils";
+import { type NinmuPlugin, foldPlugins, foldRightPlugins } from "./plugin";
 
 const STATE_IDLE = 0;
 const STATE_STARTED = 1;
@@ -24,7 +25,9 @@ export interface InternalEngine extends Engine {
 
   state: EngineState;
 
-  _createTask(options: TaskOptions, topLevel: boolean): InternalTask;
+  plugins: NinmuPlugin[];
+
+  _createTask(options: TaskOptions, parent?: InternalTask): InternalTask;
 
   /**
    * Checks if we can start some tasks. And notify the observers
@@ -40,6 +43,8 @@ class EngineImpl implements InternalEngine {
   runningTasks = new Set<InternalTask>();
   state: EngineState = STATE_IDLE;
   hasErrors = false;
+
+  plugins: NinmuPlugin[] = [];
 
   onEndObservers = createObserverCollection<void>();
   onErrorObservers = createObserverCollection<Task>();
@@ -60,7 +65,17 @@ class EngineImpl implements InternalEngine {
     return this.state !== STATE_SETTLED;
   }
 
-  _createTask(options: TaskOptions, topLevel: boolean) {
+  use(plugin: NinmuPlugin): void {
+    this.plugins.push(plugin);
+    plugin.attach?.(this);
+  }
+
+  _createTask(options: TaskOptions, parent?: InternalTask) {
+    foldRightPlugins(this.plugins, undefined, (plugin, acc) => {
+      plugin.beforeCreateTask?.(options, parent);
+      return acc;
+    });
+
     const task = createTask(options, this);
     task.onEnd(() => {
       if (task.isFailed) {
@@ -74,7 +89,7 @@ class EngineImpl implements InternalEngine {
     });
 
     this.allTasks.push(task);
-    if (topLevel) {
+    if (!parent) {
       this.topLevelTasks.push(task);
     }
     this.pendingTasks.add(task);
@@ -82,11 +97,16 @@ class EngineImpl implements InternalEngine {
     this.checkTasksScheduler.schedule();
     this.onUpdateObservers.emit(task);
 
+    foldPlugins(this.plugins, undefined, (acc, plugin) => {
+      plugin.afterCreateTask?.(task, parent);
+      return acc;
+    });
+
     return task;
   }
 
   createTask(options: TaskOptions): Task {
-    return this._createTask(options, true);
+    return this._createTask(options, undefined);
   }
 
   start() {
