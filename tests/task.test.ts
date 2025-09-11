@@ -113,6 +113,23 @@ it("should run throwing async task safely", async () => {
   expect(task.isFailed).toBeTruthy();
 });
 
+it("should notify onStart observers when started", () => {
+  const onStartBody = vi.fn();
+
+  const engine = createInternalEngine();
+  const task = createTask(
+    {
+      name: "test task",
+      execute() {},
+    },
+    engine,
+  );
+  task.onStart(onStartBody);
+
+  task._start();
+  expect(onStartBody).toHaveBeenCalledOnce();
+});
+
 it("should not start more than once", () => {
   const taskBody = vi.fn();
 

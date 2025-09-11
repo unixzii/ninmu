@@ -57,6 +57,7 @@ export function createTask(
   engine: InternalEngine,
   parentTask?: InternalTask,
 ): InternalTask {
+  const onStartObservers = createObserverCollection<void>();
   const onFinishObservers = createObserverCollection<void>();
   const onFailObservers = createObserverCollection<unknown>();
   const onEndObservers = createObserverCollection<void>();
@@ -115,6 +116,7 @@ export function createTask(
       // We don't need to check the dependencies here, since the engine will ensure
       // that all prerequisites are met before calling this.
       this.state = STATE_STARTED;
+      onStartObservers.emit();
 
       runGuarded(this.options.execute.bind(this), (thrown) => {
         if (thrown) {
@@ -126,6 +128,9 @@ export function createTask(
         }
         onEndObservers.emit();
       });
+    },
+    onStart(observer) {
+      return onStartObservers.register(observer);
     },
     onFinish(observer) {
       return onFinishObservers.register(observer);

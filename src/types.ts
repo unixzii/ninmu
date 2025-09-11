@@ -63,6 +63,11 @@ export interface Task {
   createTask(options: TaskOptions): Task;
 
   /**
+   * Registers an observer to be notified when this task starts.
+   */
+  onStart(observer: Observer<void>): Disposable;
+
+  /**
    * Registers an observer to be notified when this task finishes.
    */
   onFinish(observer: Observer<void>): Disposable;
